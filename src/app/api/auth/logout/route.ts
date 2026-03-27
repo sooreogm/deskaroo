@@ -5,7 +5,8 @@ import { clearRefreshTokenCookie, getRefreshTokenCookieName, revokeRefreshToken 
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
-  const refreshToken = cookies().get(getRefreshTokenCookieName())?.value;
+  const cookieStore = await cookies();
+  const refreshToken = cookieStore.get(getRefreshTokenCookieName())?.value;
 
   try {
     if (refreshToken) {

@@ -4,9 +4,10 @@ import { prisma } from '@/lib/db';
 import { ensureSeedData } from '@/lib/db/seed';
 import { hashPassword } from '@/lib/password';
 
-export async function POST(request: Request, { params }: { params: { userId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ userId: string }> }) {
   try {
     await ensureSeedData();
+    const { userId } = await params;
 
     const { password } = await request.json();
 
@@ -15,13 +16,13 @@ export async function POST(request: Request, { params }: { params: { userId: str
     }
 
     await prisma.user.update({
-      where: { id: params.userId },
+      where: { id: userId },
       data: {
         passwordHash: await hashPassword(String(password)),
       },
     });
 
-    await revokeAllUserRefreshTokens(params.userId);
+    await revokeAllUserRefreshTokens(userId);
 
     return NextResponse.json({ success: true });
   } catch (error) {

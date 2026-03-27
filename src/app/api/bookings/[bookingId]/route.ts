@@ -5,9 +5,10 @@ import { ensureSeedData } from '@/lib/db/seed';
 
 const validStatuses = new Set(['pending', 'confirmed', 'cancelled', 'checked_in', 'checked_out']);
 
-export async function PATCH(request: Request, { params }: { params: { bookingId: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ bookingId: string }> }) {
   try {
     await ensureSeedData();
+    const { bookingId } = await params;
 
     const { status } = await request.json();
     const normalizedStatus = String(status ?? '');
@@ -17,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: { bookingId:
     }
 
     const booking = await prisma.booking.update({
-      where: { id: params.bookingId },
+      where: { id: bookingId },
       data: {
         status: normalizedStatus,
         ...(normalizedStatus === 'checked_in'

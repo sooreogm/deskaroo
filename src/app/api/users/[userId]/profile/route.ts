@@ -4,12 +4,13 @@ import { ensureSeedData } from '@/lib/db/seed';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_: Request, { params }: { params: { userId: string } }) {
+export async function GET(_: Request, { params }: { params: Promise<{ userId: string }> }) {
   try {
     await ensureSeedData();
+    const { userId } = await params;
 
     const user = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
       select: {
         id: true,
         name: true,
@@ -40,14 +41,15 @@ export async function GET(_: Request, { params }: { params: { userId: string } }
   }
 }
 
-export async function PATCH(request: Request, { params }: { params: { userId: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ userId: string }> }) {
   try {
     await ensureSeedData();
+    const { userId } = await params;
 
     const { name, phone, department, avatar_url } = await request.json();
 
     const user = await prisma.user.update({
-      where: { id: params.userId },
+      where: { id: userId },
       data: {
         ...(name !== undefined ? { name: String(name) } : {}),
         ...(phone !== undefined ? { phone: phone ? String(phone) : null } : {}),

@@ -3,9 +3,10 @@ import { prisma } from '@/lib/db';
 import { ensureSeedData } from '@/lib/db/seed';
 import { toDeskResponse } from '@/lib/db/transformers';
 
-export async function PATCH(request: Request, { params }: { params: { deskId: string } }) {
+export async function PATCH(request: Request, { params }: { params: Promise<{ deskId: string }> }) {
   try {
     await ensureSeedData();
+    const { deskId } = await params;
 
     const { name, roomId, status, type } = await request.json();
     const normalizedName = String(name ?? '').trim();
@@ -16,7 +17,7 @@ export async function PATCH(request: Request, { params }: { params: { deskId: st
     }
 
     const desk = await prisma.desk.update({
-      where: { id: params.deskId },
+      where: { id: deskId },
       data: {
         name: normalizedName,
         roomId: normalizedRoomId,
@@ -34,20 +35,21 @@ export async function PATCH(request: Request, { params }: { params: { deskId: st
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { deskId: string } }) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ deskId: string }> }) {
   try {
     await ensureSeedData();
+    const { deskId } = await params;
 
     await prisma.$transaction(async (tx) => {
       await tx.booking.deleteMany({
         where: {
-          deskId: params.deskId,
+          deskId,
         },
       });
 
       await tx.desk.delete({
         where: {
-          id: params.deskId,
+          id: deskId,
         },
       });
     });
