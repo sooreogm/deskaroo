@@ -1,8 +1,11 @@
 export async function requestJson<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const isFormDataRequest =
+    typeof FormData !== 'undefined' && init?.body instanceof FormData;
+
   const response = await fetch(input, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormDataRequest ? {} : { 'Content-Type': 'application/json' }),
       ...(init?.headers ?? {}),
     },
   });

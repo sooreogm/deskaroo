@@ -148,6 +148,54 @@ export interface Message {
   updatedAt?: Date;
 }
 
+export interface CommunitySpaceSummary {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string;
+  memberCount: number;
+  messageCount: number;
+}
+
+export interface CommunitySpaceMembership {
+  id: string;
+  spaceId: string;
+  userId: string;
+  joinedAt: Date;
+  lastReadAt?: Date;
+}
+
+export interface CommunityMessage {
+  id: string;
+  spaceId: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isCurrentUser: boolean;
+  attachments: Array<{
+    id: string;
+    kind: 'file' | 'voice_note';
+    fileName: string;
+    mimeType: string;
+    size: number;
+    url: string;
+  }>;
+  sender: {
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    department?: string;
+  };
+}
+
+export interface CommunitySnapshot {
+  space: CommunitySpaceSummary;
+  membership: CommunitySpaceMembership | null;
+  requiresAvatar: boolean;
+  messages: CommunityMessage[];
+}
+
 export interface AnnouncementAcknowledgment {
   announcementId: string;
   userId: string;

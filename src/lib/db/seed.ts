@@ -75,6 +75,8 @@ const seedDatabase = async () => {
         department: seededAdmin.department ?? null,
         role: seededAdmin.role,
         teamId: seededAdmin.teamId ?? null,
+        emailVerifiedAt: seededAdmin.emailVerifiedAt ?? null,
+        emailVerificationRequired: seededAdmin.emailVerificationRequired ?? false,
       },
     });
   }

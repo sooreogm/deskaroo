@@ -19,7 +19,16 @@ interface AuthContextType {
   user: AuthUser | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string
+  ) => Promise<{
+    error: Error | null;
+    email: string | null;
+    verificationRequired: boolean;
+    verificationEmailSent: boolean;
+  }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
@@ -92,8 +101,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [session?.expires_at]);
 
   const signUp = async (email: string, password: string, name: string) => {
-    const { error } = await signUpUser(email, password, name);
-    return { error };
+    const { error, verificationRequired, verificationEmailSent, email: registeredEmail } = await signUpUser(
+      email,
+      password,
+      name
+    );
+    return { error, verificationRequired, verificationEmailSent, email: registeredEmail };
   };
 
   const signIn = async (email: string, password: string) => {

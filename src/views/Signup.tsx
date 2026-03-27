@@ -55,12 +55,21 @@ const Signup = () => {
       return;
     }
     setLoading(true);
-    const { error } = await signUp(email, password, name);
+    const { error, email: registeredEmail, verificationEmailSent } = await signUp(email, password, name);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Account created. Sign in to continue.');
-      router.push('/login');
+      const targetEmail = registeredEmail ?? email.trim().toLowerCase();
+      toast.success(
+        verificationEmailSent
+          ? 'Account created. Check your email to verify your account.'
+          : 'Account created. Use the resend option on the sign-in page to verify your email.'
+      );
+      router.push(
+        `/login?verification=pending&email=${encodeURIComponent(targetEmail)}&sent=${
+          verificationEmailSent ? '1' : '0'
+        }`
+      );
     }
     setLoading(false);
   };
@@ -80,7 +89,7 @@ const Signup = () => {
                 Start booking desks with less friction
               </h1>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Set up your Deskaroo account and you&apos;ll be ready to reserve desks, manage bookings, and use QR check-in at the office.
+                Set up your Deskaroo account, verify your email, and you&apos;ll be ready to reserve desks, manage bookings, and use QR check-in at the office.
               </p>
             </div>
 
@@ -197,7 +206,7 @@ const Signup = () => {
                 Ready on day one
               </p>
               <p className="mt-3 text-sm leading-6 text-white/68">
-                Once your account is created, you can head straight into the booking flow and keep your office attendance tied to the right desk.
+                Once your account is created and your email is verified, you can head straight into the booking flow and keep your office attendance tied to the right desk.
               </p>
             </div>
           </div>

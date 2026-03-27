@@ -1,15 +1,29 @@
+import { cn } from '@/lib/utils';
 import { ReactNode } from 'react';
-import AppSidebar from './AppSidebar';
+import FloatingAppNav from './FloatingAppNav';
 
-const AppLayout = ({ children }: { children: ReactNode }) => {
+const AppLayout = ({
+  children,
+  fullBleed = false,
+  showFloatingNav = true,
+}: {
+  children: ReactNode;
+  fullBleed?: boolean;
+  showFloatingNav?: boolean;
+}) => {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto flex min-h-screen max-w-[1680px] flex-col lg:flex-row">
-      <AppSidebar />
-      <main className="flex-1 overflow-auto px-4 pb-8 pt-4 sm:px-6 lg:px-10 lg:py-10">
+    <div className={cn('min-h-screen bg-background', fullBleed && 'h-screen overflow-hidden')}>
+      {showFloatingNav ? <FloatingAppNav /> : null}
+      <main
+        className={cn(
+          'mx-auto min-h-screen',
+          fullBleed
+            ? 'h-screen max-w-none px-0 pt-0 pb-0'
+            : 'max-w-[1680px] px-4 pt-6 pb-32 sm:px-6 sm:pt-8 sm:pb-36 lg:px-10 lg:pt-10'
+        )}
+      >
         {children}
       </main>
-      </div>
     </div>
   );
 };

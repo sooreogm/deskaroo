@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, CalendarIcon, Check, Clock, Loader2, MapPin, QrCode } from 'lucide-react';
-import { format } from 'date-fns';
+import { differenceInCalendarDays, format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/components/layout/AppLayout';
-import { useBookingsByDate, useCreateBooking } from '@/hooks/useBookings';
+import { useBookingsByRange, useCreateBooking } from '@/hooks/useBookings';
 import { useDesks } from '@/hooks/useDesks';
 import { useRooms } from '@/hooks/useRooms';
 import { cn } from '@/lib/utils';
@@ -21,7 +22,7 @@ import { BookingDuration, TimeSlot } from '@/types';
 
 const STEPS = [
   { label: 'Select Desk', description: 'Choose a room and workspace' },
-  { label: 'Select Time', description: 'Choose date and duration' },
+  { label: 'Select Dates', description: 'Choose dates and duration' },
   { label: 'Confirm', description: 'Review before booking' },
 ];
 
@@ -32,19 +33,31 @@ const durationOptions = [
   { value: 'custom', label: 'Custom', desc: 'Choose a time range' },
 ] as const;
 
+const getInitialDate = () => {
+  const initialDate = new Date();
+  initialDate.setHours(12, 0, 0, 0);
+  return initialDate;
+};
+
 const BookDesk = () => {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedDeskId, setSelectedDeskId] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [defaultDate] = useState<Date>(getInitialDate);
+  const [selectedDateRange, setSelectedDateRange] = useState<DateRange | undefined>(() => ({
+    from: getInitialDate(),
+    to: getInitialDate(),
+  }));
   const [duration, setDuration] = useState<BookingDuration>('full-day');
   const [timeStart, setTimeStart] = useState<string>('09:00');
   const [timeEnd, setTimeEnd] = useState<string>('17:00');
 
   const { data: rooms = [], isLoading: roomsLoading } = useRooms();
   const { data: desks = [], isLoading: desksLoading } = useDesks(selectedRoomId ?? undefined);
-  const { data: dateBookings = [] } = useBookingsByDate(selectedDate);
+  const selectedStartDate = selectedDateRange?.from ?? defaultDate;
+  const selectedEndDate = selectedDateRange?.to ?? selectedDateRange?.from ?? defaultDate;
+  const { data: dateBookings = [] } = useBookingsByRange(selectedStartDate, selectedEndDate);
   const createBooking = useCreateBooking();
 
   useEffect(() => {
@@ -53,12 +66,18 @@ const BookDesk = () => {
     }
   }, [rooms, selectedRoomId]);
 
-  const bookedDeskIds = dateBookings.map((booking) => booking.deskId);
+  const bookedDeskIds = Array.from(new Set(dateBookings.map((booking) => booking.deskId)));
   const selectedDesk = desks.find((desk) => desk.id === selectedDeskId);
   const selectedRoom = rooms.find((room) => room.id === selectedRoomId);
+  const selectedDayCount = differenceInCalendarDays(selectedEndDate, selectedStartDate) + 1;
+  const selectedDatesLabel =
+    selectedDayCount === 1
+      ? format(selectedStartDate, 'PPP')
+      : `${format(selectedStartDate, 'PPP')} - ${format(selectedEndDate, 'PPP')}`;
   const hasValidCustomTime = duration !== 'custom' || timeStart < timeEnd;
-  const canProceedStep0 = !!selectedDeskId;
-  const canProceedStep1 = !!selectedDate && !!duration && hasValidCustomTime;
+  const selectedDeskUnavailable = !!selectedDeskId && bookedDeskIds.includes(selectedDeskId);
+  const canProceedStep0 = !!selectedDeskId && !selectedDeskUnavailable;
+  const canProceedStep1 = !!selectedStartDate && !!selectedEndDate && !!duration && hasValidCustomTime && !selectedDeskUnavailable;
   const selectedDurationLabel = durationOptions.find((option) => option.value === duration)?.label ?? duration;
 
   const handleConfirm = () => {
@@ -69,22 +88,30 @@ const BookDesk = () => {
       return;
     }
 
+    if (selectedDeskUnavailable) {
+      toast.error('Select a desk that is available for every day in the selected range');
+      setStep(0);
+      return;
+    }
+
     const booking: {
       deskId: string;
       roomId: string;
-      date: Date;
+      startDate: Date;
+      endDate: Date;
       duration: BookingDuration;
       timeSlot?: TimeSlot;
     } = {
       deskId: selectedDeskId,
       roomId: selectedRoomId,
-      date: selectedDate,
+      startDate: selectedStartDate,
+      endDate: selectedEndDate,
       duration,
     };
 
     if (duration === 'custom' && timeStart && timeEnd) {
-      const start = new Date(selectedDate);
-      const end = new Date(selectedDate);
+      const start = new Date(selectedStartDate);
+      const end = new Date(selectedStartDate);
 
       start.setHours(Number(timeStart.split(':')[0]), 0, 0, 0);
       end.setHours(Number(timeEnd.split(':')[0]), 0, 0, 0);
@@ -92,7 +119,13 @@ const BookDesk = () => {
     }
 
     createBooking.mutate(booking, {
-      onSuccess: () => {
+      onSuccess: (createdBookings) => {
+        const bookedDays = createdBookings.length;
+        toast.success(
+          bookedDays > 1
+            ? `Desk reserved for ${bookedDays} days`
+            : 'Desk reserved successfully'
+        );
         router.push('/mybookings');
       },
     });
@@ -107,26 +140,16 @@ const BookDesk = () => {
   return (
     <AppLayout>
       <div className="mx-auto max-w-7xl space-y-8">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <div className="flex flex-col gap-5">
           <div>
             <span className="page-eyebrow">Book a Desk</span>
             <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               Reserve your workspace in three clear steps
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Choose a room, pick a desk, set the time, and then use the QR code on that desk to check in when you arrive.
+              Choose a room, pick a desk, reserve it for one day or several days ahead, and then use the QR code on that desk to check in when you arrive.
             </p>
           </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/dashboard')}
-            className="h-11 rounded-full border-black/10 bg-white/80 px-5"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Button>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.16fr,0.84fr]">
@@ -188,7 +211,7 @@ const BookDesk = () => {
                         <MapPin className="h-5 w-5 text-primary" />
                         Select a desk
                       </CardTitle>
-                      <CardDescription>Choose the room you want and then pick an available desk.</CardDescription>
+                      <CardDescription>Choose the room you want and then pick a desk that stays free for the days you need.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-7">
                       <div>
@@ -222,6 +245,9 @@ const BookDesk = () => {
 
                       <div>
                         <Label className="mb-3 block text-sm font-medium text-foreground">Desk</Label>
+                        <p className="mb-4 text-sm text-muted-foreground">
+                          Availability reflects the full reservation window: {selectedDatesLabel}.
+                        </p>
                         {desksLoading ? (
                           <div className="flex justify-center py-12">
                             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -306,13 +332,13 @@ const BookDesk = () => {
                     <CardHeader className="pb-5">
                       <CardTitle className="flex items-center gap-2 text-2xl tracking-tight">
                         <Clock className="h-5 w-5 text-primary" />
-                        Select time
+                        Select dates and time
                       </CardTitle>
-                      <CardDescription>Set the booking date and the time window you need.</CardDescription>
+                      <CardDescription>Choose one day or a consecutive range, then set the daily time window you need.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-7">
                       <div>
-                        <Label className="mb-3 block text-sm font-medium text-foreground">Date</Label>
+                        <Label className="mb-3 block text-sm font-medium text-foreground">Dates</Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
@@ -320,20 +346,27 @@ const BookDesk = () => {
                               className="h-12 w-full justify-start rounded-2xl border-black/10 bg-white/80 text-left font-medium sm:w-[320px]"
                             >
                               <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                              {format(selectedDate, 'PPP')}
+                              {selectedDatesLabel}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto rounded-[1.5rem] border-black/10 p-0" align="start">
+                          <PopoverContent
+                            className="w-auto rounded-[1.5rem] border-black/10 p-0"
+                            align="start"
+                          >
                             <Calendar
-                              mode="single"
-                              selected={selectedDate}
-                              onSelect={(date) => date && setSelectedDate(date)}
+                              mode="range"
+                              selected={selectedDateRange}
+                              onSelect={(range) => setSelectedDateRange(range ?? { from: defaultDate, to: defaultDate })}
                               disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                              numberOfMonths={1}
                               initialFocus
                               className="pointer-events-auto p-3"
                             />
                           </PopoverContent>
                         </Popover>
+                        <p className="mt-3 text-sm text-muted-foreground">
+                          Pick a single date or a consecutive run of {selectedDayCount} day{selectedDayCount === 1 ? '' : 's'}.
+                        </p>
                       </div>
 
                       <div>
@@ -413,6 +446,12 @@ const BookDesk = () => {
                           )}
                         </div>
                       )}
+
+                      {selectedDeskUnavailable && (
+                        <div className="rounded-[1.5rem] border border-destructive/25 bg-destructive/10 p-4 text-sm text-destructive">
+                          {selectedDesk?.name ?? 'The selected desk'} is not available for every day in this date range. Go back and choose another desk before confirming.
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -449,9 +488,18 @@ const BookDesk = () => {
                           </div>
                           <div className="h-px bg-black/8" />
                           <div className="flex items-center justify-between gap-6">
-                            <span className="text-sm text-muted-foreground">Date</span>
-                            <span className="text-sm font-semibold text-foreground">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+                            <span className="text-sm text-muted-foreground">Dates</span>
+                            <span className="text-sm font-semibold text-foreground">{selectedDatesLabel}</span>
                           </div>
+                          {selectedDayCount > 1 && (
+                            <>
+                              <div className="h-px bg-black/8" />
+                              <div className="flex items-center justify-between gap-6">
+                                <span className="text-sm text-muted-foreground">Days</span>
+                                <span className="text-sm font-semibold text-foreground">{selectedDayCount}</span>
+                              </div>
+                            </>
+                          )}
                           <div className="h-px bg-black/8" />
                           <div className="flex items-center justify-between gap-6">
                             <span className="text-sm text-muted-foreground">Duration</span>
@@ -527,7 +575,8 @@ const BookDesk = () => {
               {[
                 { label: 'Room', value: selectedRoom?.name ?? 'Choose a room' },
                 { label: 'Desk', value: selectedDesk?.name ?? 'Choose a desk' },
-                { label: 'Date', value: format(selectedDate, 'PPP') },
+                { label: 'Dates', value: selectedDatesLabel },
+                ...(selectedDayCount > 1 ? [{ label: 'Days', value: String(selectedDayCount) }] : []),
                 { label: 'Duration', value: duration === 'custom' ? `${timeStart} - ${timeEnd}` : selectedDurationLabel },
               ].map((item) => (
                 <div key={item.label} className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">

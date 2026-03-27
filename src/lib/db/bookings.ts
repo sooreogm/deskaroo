@@ -70,19 +70,21 @@ export const assertDeskAvailable = async ({
   duration,
   timeSlot,
   excludeBookingId,
+  db = prisma,
 }: {
   deskId: string;
   dateKey: string;
   duration: string;
   timeSlot?: BookingTimeSlotPayload | null;
   excludeBookingId?: string;
+  db?: Prisma.TransactionClient | typeof prisma;
 }) => {
   const requestedRange = getRangeForBooking(duration, timeSlot);
   if (!requestedRange || requestedRange.start >= requestedRange.end) {
     throw new Error('Invalid booking time slot');
   }
 
-  const existingBookings = await prisma.booking.findMany({
+  const existingBookings = await db.booking.findMany({
     where: {
       deskId,
       dateKey,

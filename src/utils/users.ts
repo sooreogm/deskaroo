@@ -37,6 +37,18 @@ interface AuthResponse {
   session: AuthSession;
 }
 
+interface SignUpResponse {
+  user: User;
+  email: string;
+  verificationRequired: boolean;
+  verificationEmailSent: boolean;
+}
+
+interface VerificationEmailResponse {
+  success: true;
+  message: string;
+}
+
 interface UserProfile {
   user_id: string;
   name: string;
@@ -45,6 +57,44 @@ interface UserProfile {
   department?: string;
   avatar_url?: string;
 }
+
+const syncStoredProfile = (userId: string, profile: UserProfile) => {
+  const existingUser = getPublicUserById(userId);
+
+  if (existingUser) {
+    upsertKnownUser({
+      ...existingUser,
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      department: profile.department,
+      avatar: profile.avatar_url,
+    });
+  }
+
+  if (currentProfile?.id === userId) {
+    const nextProfile: User = {
+      ...currentProfile,
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+      department: profile.department,
+      avatar: profile.avatar_url,
+    };
+
+    const nextAuthUser = currentAuthUser
+      ? {
+          ...currentAuthUser,
+          email: profile.email,
+          user_metadata: {
+            name: profile.name,
+          },
+        }
+      : null;
+
+    persistCurrentSession(nextAuthUser, nextProfile);
+  }
+};
 
 const users: StoredUser[] = [
   {
@@ -401,19 +451,55 @@ export const signUpUser = async (
   email: string,
   password: string,
   name: string
-): Promise<{ user: User | null; error: Error | null }> => {
+): Promise<{
+  user: User | null;
+  email: string | null;
+  verificationRequired: boolean;
+  verificationEmailSent: boolean;
+  error: Error | null;
+}> => {
   try {
-    const data = await requestJson<{ user: User }>('/api/auth/signup', {
+    const data = await requestJson<SignUpResponse>('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ email, password, name }),
     });
 
     upsertKnownUser(data.user);
-    return { user: data.user, error: null };
+    return {
+      user: data.user,
+      email: data.email,
+      verificationRequired: data.verificationRequired,
+      verificationEmailSent: data.verificationEmailSent,
+      error: null,
+    };
   } catch (error) {
     return {
       user: null,
+      email: null,
+      verificationRequired: false,
+      verificationEmailSent: false,
       error: error instanceof Error ? error : new Error('Unable to sign up'),
+    };
+  }
+};
+
+export const resendEmailVerification = async (
+  email: string
+): Promise<{ message: string | null; error: Error | null }> => {
+  try {
+    const data = await requestJson<VerificationEmailResponse>('/api/auth/email-verification/resend', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+
+    return {
+      message: data.message,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      message: null,
+      error: error instanceof Error ? error : new Error('Unable to resend verification email'),
     };
   }
 };
@@ -461,7 +547,7 @@ export const refreshAuthSession = async (): Promise<{ user: AuthUser | null; err
 export const restoreAuthSession = async (): Promise<{ user: AuthUser | null; error: Error | null }> => {
   hydrateFromStorage();
 
-  if (currentAuthUser && (!currentSession || hasFreshSession(currentSession, 0))) {
+  if (currentAuthUser && currentSession && hasFreshSession(currentSession, 0)) {
     return { user: currentAuthUser, error: null };
   }
 
@@ -486,40 +572,7 @@ export const updateUserProfile = async (
       body: JSON.stringify(updates),
     });
 
-    const existingUser = getPublicUserById(userId);
-    if (existingUser) {
-      upsertKnownUser({
-        ...existingUser,
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-        department: profile.department,
-        avatar: profile.avatar_url,
-      });
-    }
-
-    if (currentProfile?.id === userId) {
-      const nextProfile: User = {
-        ...currentProfile,
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-        department: profile.department,
-        avatar: profile.avatar_url,
-      };
-
-      const nextAuthUser = currentAuthUser
-        ? {
-            ...currentAuthUser,
-            email: profile.email,
-            user_metadata: {
-              name: profile.name,
-            },
-          }
-        : null;
-
-      persistCurrentSession(nextAuthUser, nextProfile);
-    }
+    syncStoredProfile(userId, profile);
 
     return profile;
   } catch {
@@ -528,15 +581,27 @@ export const updateUserProfile = async (
 };
 
 export const uploadUserAvatar = async (userId: string, file: File): Promise<string> => {
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error('Unable to read image'));
-    reader.readAsDataURL(file);
+  const { user, error } = await restoreAuthSession();
+  const session = getCurrentAuthSession();
+
+  if (!user || user.id !== userId || !session?.access_token) {
+    throw error ?? new Error('Not authenticated');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const profile = await requestJson<UserProfile>(`/api/users/${userId}/profile/avatar`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+    },
   });
 
-  await updateUserProfile(userId, { avatar_url: dataUrl });
-  return dataUrl;
+  syncStoredProfile(userId, profile);
+
+  return profile.avatar_url ?? '';
 };
 
 export const updateCurrentUserPassword = async (password: string): Promise<{ error: Error | null }> => {

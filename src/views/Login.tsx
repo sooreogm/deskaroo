@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, CalendarDays, QrCode, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import Logo from '@/components/navbar/Logo';
+import { resendEmailVerification } from '@/utils/users';
 
 const highlights = [
   {
@@ -30,9 +31,13 @@ const highlights = [
 const Login = () => {
   const { signIn, user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [verificationHint, setVerificationHint] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -40,15 +45,79 @@ const Login = () => {
     }
   }, [router, user]);
 
+  useEffect(() => {
+    const queryEmail = searchParams.get('email');
+    const verificationState = searchParams.get('verification');
+    const verificationSent = searchParams.get('sent');
+    const verified = searchParams.get('verified');
+
+    if (queryEmail) {
+      setEmail((current) => current || queryEmail);
+      setVerificationEmail(queryEmail);
+    }
+
+    if (verified === '1') {
+      toast.success('Your email has been verified. You can sign in now.');
+      setVerificationHint(null);
+      return;
+    }
+
+    if (verificationState === 'pending') {
+      setVerificationHint(
+        verificationSent === '0'
+          ? 'Your account was created, but the verification email could not be sent automatically. Request a fresh email below.'
+          : 'Check your inbox for a verification email before signing in.'
+      );
+      return;
+    }
+
+    if (verificationState === 'expired') {
+      setVerificationHint('That verification link has expired. Request a fresh email below.');
+      return;
+    }
+
+    if (verificationState === 'invalid') {
+      setVerificationHint('That verification link is invalid. Request a fresh email below.');
+    }
+  }, [searchParams]);
+
   if (user) return null;
+
+  const handleResendVerification = async () => {
+    const normalizedEmail = (verificationEmail ?? email).trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      toast.error('Enter your email address first');
+      return;
+    }
+
+    setResending(true);
+    const { error, message } = await resendEmailVerification(normalizedEmail);
+
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setVerificationEmail(normalizedEmail);
+      setVerificationHint('A fresh verification email is on the way if this account still needs one.');
+      toast.success(message ?? 'Verification email sent.');
+    }
+
+    setResending(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await signIn(email, password);
     if (error) {
+      if (/verify your email/i.test(error.message)) {
+        const normalizedEmail = email.trim().toLowerCase();
+        setVerificationEmail(normalizedEmail);
+        setVerificationHint('Verify your email before signing in. You can request a new verification email below.');
+      }
       toast.error(error.message);
     } else {
+      setVerificationHint(null);
       toast.success('Welcome back!');
       router.push('/dashboard');
     }
@@ -112,7 +181,7 @@ const Login = () => {
                 Welcome back
               </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Sign in to manage bookings, check in at your desk, and keep your office days organised.
+                Sign in to manage bookings, check in at your desk, and keep your office days organised. New accounts need email verification first.
               </p>
             </div>
 
@@ -152,6 +221,22 @@ const Login = () => {
                   />
                 </div>
               </div>
+
+              {verificationHint && (
+                <div className="rounded-[1.5rem] border border-primary/20 bg-primary/10 p-4">
+                  <p className="text-sm font-semibold text-foreground">Email verification needed</p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{verificationHint}</p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-4 rounded-full border-black/10 bg-white/80"
+                    onClick={handleResendVerification}
+                    disabled={resending}
+                  >
+                    {resending ? 'Sending...' : 'Resend verification email'}
+                  </Button>
+                </div>
+              )}
 
               <Button type="submit" className="h-12 w-full rounded-full text-sm font-semibold" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign in'}

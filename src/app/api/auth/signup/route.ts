@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { ensureSeedData } from '@/lib/db/seed';
+import { issueEmailVerificationForUser } from '@/lib/email-verification';
 import { hashPassword } from '@/lib/password';
 import { toUserResponse } from '@/lib/db/transformers';
 
@@ -35,10 +36,29 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         passwordHash: await hashPassword(String(password)),
         role: 'user',
+        emailVerificationRequired: true,
       },
     });
 
-    return NextResponse.json({ user: toUserResponse(user) });
+    let verificationEmailSent = true;
+
+    try {
+      await issueEmailVerificationForUser({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        request,
+      });
+    } catch {
+      verificationEmailSent = false;
+    }
+
+    return NextResponse.json({
+      user: toUserResponse(user),
+      email: user.email,
+      verificationRequired: true,
+      verificationEmailSent,
+    });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to sign up' },

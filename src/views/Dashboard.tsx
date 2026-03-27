@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, BarChart3, Calendar, Clock, MapPin, QrCode } from 'lucide-react';
+import { ArrowRight, BarChart3, Calendar, Clock, MapPin, MessageSquare, QrCode } from 'lucide-react';
 import { format, isFuture, isToday } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,12 @@ const Dashboard = () => {
       title: 'My Bookings',
       description: 'See upcoming bookings and manage changes',
       icon: Clock,
+    },
+    {
+      href: '/community',
+      title: 'Community Space',
+      description: 'Join the shared conversation with everyone in the office',
+      icon: MessageSquare,
     },
   ];
 

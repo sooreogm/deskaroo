@@ -33,12 +33,21 @@ export async function POST(request: Request) {
         department: true,
         role: true,
         teamId: true,
+        emailVerifiedAt: true,
+        emailVerificationRequired: true,
         passwordHash: true,
       },
     });
 
     if (!user || !(await verifyPassword(String(password), user.passwordHash))) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    }
+
+    if (user.emailVerificationRequired && !user.emailVerifiedAt) {
+      return NextResponse.json(
+        { error: 'Verify your email before signing in. Check your inbox or request a new verification email.' },
+        { status: 403 }
+      );
     }
 
     const { body, refreshToken, refreshExpiresAt } = await issueSessionForUser(user);

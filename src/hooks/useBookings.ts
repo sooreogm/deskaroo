@@ -7,7 +7,8 @@ import { cancelBookingRequest, createBookingRequest, fetchBookings } from '@/lib
 interface CreateBookingInput {
   deskId: string;
   roomId: string;
-  date: Date;
+  startDate: Date;
+  endDate?: Date;
   duration: BookingDuration;
   timeSlot?: TimeSlot;
 }
@@ -27,10 +28,19 @@ export const useUserBookings = () => {
 };
 
 export const useBookingsByDate = (date: Date) => {
+  return useBookingsByRange(date, date);
+};
+
+export const useBookingsByRange = (startDate: Date, endDate?: Date) => {
   return useQuery({
-    queryKey: ['bookings', 'date', date.toISOString().split('T')[0]],
+    queryKey: [
+      'bookings',
+      'range',
+      startDate.toISOString().split('T')[0],
+      (endDate ?? startDate).toISOString().split('T')[0],
+    ],
     queryFn: async () => {
-      const bookings = await fetchBookings({ date });
+      const bookings = await fetchBookings({ dateFrom: startDate, dateTo: endDate ?? startDate });
       return bookings.filter((booking) => booking.status !== 'cancelled');
     },
   });
