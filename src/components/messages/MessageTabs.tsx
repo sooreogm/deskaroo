@@ -14,16 +14,16 @@ const MessageTabs = () => {
 
   return (
     <Tabs defaultValue="inbox" onValueChange={setActiveTab}>
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="inbox" className="flex items-center gap-2">
+      <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-2xl bg-muted/70 p-1 sm:grid-cols-3">
+        <TabsTrigger value="inbox" className="flex min-h-[48px] items-center gap-2 whitespace-normal px-3 py-2 text-center">
           <Inbox className="h-4 w-4" />
           <span>Inbox</span>
         </TabsTrigger>
-        <TabsTrigger value="sent" className="flex items-center gap-2">
+        <TabsTrigger value="sent" className="flex min-h-[48px] items-center gap-2 whitespace-normal px-3 py-2 text-center">
           <Mail className="h-4 w-4" />
           <span>Sent</span>
         </TabsTrigger>
-        <TabsTrigger value="starred" className="flex items-center gap-2">
+        <TabsTrigger value="starred" className="flex min-h-[48px] items-center gap-2 whitespace-normal px-3 py-2 text-center">
           <Star className="h-4 w-4" />
           <span>Starred</span>
         </TabsTrigger>

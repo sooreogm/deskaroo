@@ -94,22 +94,22 @@ const MyBookings = () => {
         ) : (
           <div className="shell-panel p-4 sm:p-6">
             <Tabs defaultValue="active" className="w-full">
-              <TabsList className="grid h-auto w-full grid-cols-3 rounded-[1.5rem] border border-black/10 bg-white/80 p-1">
+              <TabsList className="grid h-auto w-full grid-cols-1 rounded-[1.5rem] border border-black/10 bg-white/80 p-1 sm:grid-cols-3">
                 <TabsTrigger
                   value="active"
-                  className="rounded-[1.15rem] px-4 py-3 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-none"
+                  className="min-h-[48px] rounded-[1.15rem] px-4 py-3 whitespace-normal data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-none"
                 >
                   Active ({activeBookings.length})
                 </TabsTrigger>
                 <TabsTrigger
                   value="past"
-                  className="rounded-[1.15rem] px-4 py-3 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-none"
+                  className="min-h-[48px] rounded-[1.15rem] px-4 py-3 whitespace-normal data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-none"
                 >
                   Past ({pastBookings.length})
                 </TabsTrigger>
                 <TabsTrigger
                   value="cancelled"
-                  className="rounded-[1.15rem] px-4 py-3 data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-none"
+                  className="min-h-[48px] rounded-[1.15rem] px-4 py-3 whitespace-normal data-[state=active]:bg-black data-[state=active]:text-white data-[state=active]:shadow-none"
                 >
                   Cancelled ({cancelledBookings.length})
                 </TabsTrigger>

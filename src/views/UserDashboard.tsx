@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import NavBar from '@/components/NavBar';
 import { getAllUsers, isAdmin } from '@/utils/users';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { User, Announcement } from '@/types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Users, BarChart as BarChartIcon, Activity, MessageSquare, Plus } from 'lucide-react';
-import { getAllTeams, getCurrentUserTeam } from '@/utils/teams';
+import { getAllTeams } from '@/utils/teams';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,6 @@ const UserDashboard = () => {
   const users = getAllUsers();
   const teams = getAllTeams();
   const isUserAdmin = isAdmin();
-  const currentUserTeam = getCurrentUserTeam();
   
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [showNewAnnouncementDialog, setShowNewAnnouncementDialog] = useState(false);
@@ -60,11 +59,11 @@ const UserDashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold">User Dashboard</h1>
           <Sheet>
             <SheetTrigger asChild>
-              <button className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90">
+              <button className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-white hover:bg-primary/90 sm:w-auto">
                 <Users size={16} />
                 <span>View All Users</span>
               </button>
@@ -81,7 +80,7 @@ const UserDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid grid-cols-2 w-[400px]">
+          <TabsList className="grid h-auto w-full grid-cols-1 gap-2 rounded-2xl bg-muted/70 p-1 sm:w-[400px] sm:grid-cols-2">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
           </TabsList>
@@ -162,11 +161,11 @@ const UserDashboard = () => {
           </TabsContent>
           
           <TabsContent value="announcements" className="space-y-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="text-xl font-semibold">Team Announcements</h2>
               <Dialog open={showNewAnnouncementDialog} onOpenChange={setShowNewAnnouncementDialog}>
                 <DialogTrigger asChild>
-                  <Button className="inline-flex items-center gap-2">
+                  <Button className="inline-flex w-full items-center justify-center gap-2 sm:w-auto">
                     <Plus size={16} />
                     <span>New Announcement</span>
                   </Button>
@@ -224,7 +223,7 @@ const StatCard = ({ title, value, icon }: { title: string; value: number; icon: 
 
 // Users Table Component
 const UsersTable = ({ users }: { users: User[] }) => (
-  <Table>
+  <Table className="min-w-[520px]">
     <TableHeader>
       <TableRow>
         <TableHead>Name</TableHead>
@@ -235,8 +234,8 @@ const UsersTable = ({ users }: { users: User[] }) => (
     <TableBody>
       {users.map((user) => (
         <TableRow key={user.id}>
-          <TableCell className="font-medium">{user.name}</TableCell>
-          <TableCell>{user.email}</TableCell>
+          <TableCell className="font-medium whitespace-nowrap">{user.name}</TableCell>
+          <TableCell className="whitespace-nowrap">{user.email}</TableCell>
           <TableCell>
             <span className={`px-2 py-1 rounded-full text-xs ${user.role === 'admin' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
               {user.role}

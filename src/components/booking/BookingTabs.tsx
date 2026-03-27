@@ -27,9 +27,9 @@ const BookingTabs = ({
 }: BookingTabsProps) => {
   return (
     <Tabs defaultValue="floor-plan" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 mb-6">
-        <TabsTrigger value="floor-plan">Floor Plan</TabsTrigger>
-        <TabsTrigger value="card-view">Card View</TabsTrigger>
+      <TabsList className="mb-6 grid h-auto w-full grid-cols-1 gap-2 rounded-2xl bg-muted/70 p-1 sm:grid-cols-2">
+        <TabsTrigger value="floor-plan" className="min-h-[48px] whitespace-normal px-4 py-2 text-center">Floor Plan</TabsTrigger>
+        <TabsTrigger value="card-view" className="min-h-[48px] whitespace-normal px-4 py-2 text-center">Card View</TabsTrigger>
       </TabsList>
       
       {/* Room selection */}

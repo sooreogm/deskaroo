@@ -41,7 +41,7 @@ const AdminUsers = () => {
             <CardTitle className="text-xl tracking-tight">All Users ({users.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table className="min-w-[720px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
@@ -60,11 +60,11 @@ const AdminUsers = () => {
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-foreground">
                             {user.name?.slice(0, 1).toUpperCase() ?? 'U'}
                           </div>
-                          <span>{user.name}</span>
+                          <span className="whitespace-nowrap">{user.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.department ?? 'N/A'}</TableCell>
+                      <TableCell className="whitespace-nowrap">{user.email}</TableCell>
+                      <TableCell className="whitespace-nowrap">{user.department ?? 'N/A'}</TableCell>
                       <TableCell>
                         <Badge
                           variant={role === 'admin' ? 'default' : 'secondary'}

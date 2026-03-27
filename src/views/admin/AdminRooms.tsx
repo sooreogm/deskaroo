@@ -232,14 +232,14 @@ const AdminRooms = () => {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <Dialog open={roomDialogOpen} onOpenChange={setRoomDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={() => openRoomDialog()} className="rounded-full px-5">
                   <Plus className="mr-2 h-4 w-4" /> Add Room
                 </Button>
               </DialogTrigger>
-              <DialogContent className="rounded-[1.75rem] border border-black/10 bg-white p-0 shadow-[0_32px_90px_-48px_rgba(0,0,0,0.35)] sm:max-w-lg">
+              <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[1.75rem] border border-black/10 bg-white p-0 shadow-[0_32px_90px_-48px_rgba(0,0,0,0.35)] sm:max-w-lg">
                 <div className="p-6 sm:p-7">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
@@ -255,7 +255,7 @@ const AdminRooms = () => {
                       onChange={(event) => setRoomForm((current) => ({ ...current, name: event.target.value }))}
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label className="mb-2 block">Floor</Label>
                       <Input
@@ -289,7 +289,7 @@ const AdminRooms = () => {
                   <Plus className="mr-2 h-4 w-4" /> Add Desk
                 </Button>
               </DialogTrigger>
-              <DialogContent className="rounded-[1.75rem] border border-black/10 bg-white p-0 shadow-[0_32px_90px_-48px_rgba(0,0,0,0.35)] sm:max-w-lg">
+              <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[1.75rem] border border-black/10 bg-white p-0 shadow-[0_32px_90px_-48px_rgba(0,0,0,0.35)] sm:max-w-lg">
                 <div className="p-6 sm:p-7">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground">
@@ -324,7 +324,7 @@ const AdminRooms = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <Label className="mb-2 block">Status</Label>
                       <Select
@@ -377,7 +377,7 @@ const AdminRooms = () => {
             <CardTitle className="text-xl tracking-tight">All Rooms ({rooms.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table className="min-w-[640px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
@@ -421,7 +421,7 @@ const AdminRooms = () => {
             <CardTitle className="text-xl tracking-tight">Desk Inventory ({desks.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>Desk</TableHead>
@@ -484,7 +484,7 @@ const AdminRooms = () => {
         </Card>
 
         <Dialog open={!!qrDesk} onOpenChange={(open) => !open && setQrDesk(null)}>
-          <DialogContent className="rounded-[1.75rem] border border-black/10 bg-white p-0 shadow-[0_32px_90px_-48px_rgba(0,0,0,0.35)] sm:max-w-md">
+          <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[1.75rem] border border-black/10 bg-white p-0 shadow-[0_32px_90px_-48px_rgba(0,0,0,0.35)] sm:max-w-md">
             <div className="p-6 sm:p-7">
             <DialogHeader>
               <DialogTitle className="text-2xl font-semibold tracking-tight text-foreground">

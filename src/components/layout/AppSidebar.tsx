@@ -24,8 +24,8 @@ const AppSidebar = () => {
         <Logo href="/dashboard" tone="dark" />
       </div>
 
-      <nav className="flex-1 overflow-x-auto px-4 py-4 lg:px-5">
-        <div className="flex gap-2 lg:flex-col">
+      <nav className="flex-1 px-4 py-4 lg:px-5">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:flex-col">
         {userLinks.map(link => {
           const isActive = pathname === link.path;
           return (
@@ -33,14 +33,14 @@ const AppSidebar = () => {
               key={link.path}
               href={link.path}
               className={cn(
-                'flex min-w-[148px] items-center justify-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors lg:min-w-0 lg:justify-start',
+                'flex min-h-[52px] min-w-0 items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors sm:justify-center lg:justify-start',
                 isActive
                   ? 'bg-primary text-black'
                   : 'bg-white/[0.05] text-white/70 hover:bg-white/[0.1] hover:text-white'
               )}
             >
               <link.icon className="h-4 w-4" />
-              {link.name}
+              <span className="leading-tight text-left sm:text-center lg:text-left">{link.name}</span>
             </Link>
           );
         })}

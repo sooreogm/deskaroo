@@ -52,7 +52,7 @@ const AdminBookings = () => {
             <CardTitle className="text-xl tracking-tight">Recent Bookings ({bookings.length})</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
@@ -67,13 +67,13 @@ const AdminBookings = () => {
                 {bookings.map((booking) => {
                   return (
                     <TableRow key={booking.id}>
-                      <TableCell className="font-medium">{booking.userName ?? 'Unknown'}</TableCell>
-                      <TableCell>{booking.deskName ?? 'N/A'}</TableCell>
-                      <TableCell>{booking.roomName ?? 'N/A'}</TableCell>
-                      <TableCell>{format(booking.date, 'MMM d, yyyy')}</TableCell>
-                      <TableCell>{booking.duration}</TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">{booking.userName ?? 'Unknown'}</TableCell>
+                      <TableCell className="whitespace-nowrap">{booking.deskName ?? 'N/A'}</TableCell>
+                      <TableCell className="whitespace-nowrap">{booking.roomName ?? 'N/A'}</TableCell>
+                      <TableCell className="whitespace-nowrap">{format(booking.date, 'MMM d, yyyy')}</TableCell>
+                      <TableCell className="whitespace-nowrap">{booking.duration}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${statusColor[booking.status] ?? ''}`}>
+                        <span className={`inline-flex whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${statusColor[booking.status] ?? ''}`}>
                           {booking.status.replace('_', ' ')}
                         </span>
                       </TableCell>
