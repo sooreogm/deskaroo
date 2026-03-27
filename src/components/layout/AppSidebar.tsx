@@ -1,0 +1,67 @@
+import { Home, Calendar, Clock, UserRound, LogOut, BarChart } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import Logo from '@/components/navbar/Logo';
+
+const userLinks = [
+  { name: 'Dashboard', path: '/dashboard', icon: Home },
+  { name: 'Book Desk', path: '/book', icon: Calendar },
+  { name: 'My Bookings', path: '/mybookings', icon: Clock },
+  { name: 'Profile', path: '/profile', icon: UserRound },
+];
+
+const AppSidebar = () => {
+  const pathname = usePathname();
+  const { signOut, isAdmin } = useAuth();
+
+  return (
+    <aside className="w-full border-b border-white/10 bg-black text-white lg:min-h-screen lg:w-[292px] lg:flex-none lg:border-b-0 lg:border-r">
+      <div className="flex h-full flex-col">
+      <div className="border-b border-white/10 px-5 py-5 lg:px-7 lg:py-8">
+        <Logo href="/dashboard" tone="dark" />
+      </div>
+
+      <nav className="flex-1 overflow-x-auto px-4 py-4 lg:px-5">
+        <div className="flex gap-2 lg:flex-col">
+        {userLinks.map(link => {
+          const isActive = pathname === link.path;
+          return (
+            <Link
+              key={link.path}
+              href={link.path}
+              className={cn(
+                'flex min-w-[148px] items-center justify-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors lg:min-w-0 lg:justify-start',
+                isActive
+                  ? 'bg-primary text-black'
+                  : 'bg-white/[0.05] text-white/70 hover:bg-white/[0.1] hover:text-white'
+              )}
+            >
+              <link.icon className="h-4 w-4" />
+              {link.name}
+            </Link>
+          );
+        })}
+        </div>
+      </nav>
+
+      <div className="mt-auto border-t border-white/10 p-4 space-y-2 lg:p-5">
+        {isAdmin && (
+          <Link href="/admin">
+            <Button variant="outline" size="sm" className="w-full justify-start border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.1] hover:text-white">
+              <BarChart className="h-4 w-4 mr-2" /> Admin Panel
+            </Button>
+          </Link>
+        )}
+        <Button variant="ghost" size="sm" className="w-full justify-start text-white/70 hover:bg-white/[0.08] hover:text-white" onClick={() => signOut()}>
+          <LogOut className="h-4 w-4 mr-2" /> Sign Out
+        </Button>
+      </div>
+      </div>
+    </aside>
+  );
+};
+
+export default AppSidebar;

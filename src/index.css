@@ -1,0 +1,186 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 43 96% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 43 100% 96%;
+    --secondary-foreground: 43 75% 30%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 43 100% 90%;
+    --accent-foreground: 43 75% 30%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 43 96% 50%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 18%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 18%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 18%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 18%;
+    --input: 217 33% 18%;
+    --ring: 213 27% 84%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.glassmorphism {
+  @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-lg;
+}
+
+.section-transition {
+  @apply transition-all duration-500 ease-in-out;
+}
+
+.hover-scale {
+  @apply transition-transform duration-200 hover:scale-[1.02];
+}
+
+.page-container {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.3s forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.desk {
+  @apply relative rounded-xl overflow-hidden transition-all duration-300 ease-in-out;
+}
+
+.desk-available {
+  @apply bg-green-100 border-2 border-green-300 hover:border-green-500;
+}
+
+.desk-booked {
+  @apply bg-red-100 border-2 border-red-300;
+}
+
+.desk-selected {
+  @apply bg-blue-100 border-2 border-blue-500 ring-2 ring-blue-400;
+}
+
+.room {
+  @apply relative border-2 border-gray-200 rounded-xl;
+}
+
+/* Hexagon grid styles for HiveHub theme */
+.hexagon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-gap: 15px;
+}
+
+.hexagon-item {
+  position: relative;
+  visibility: hidden;
+  outline: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.hexagon-item:hover {
+  transform: scale(1.05);
+}
+
+.hexagon-item:after {
+  content: '';
+  display: block;
+  padding-bottom: 86.602%;
+}
+
+.hexagon-in1 {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  visibility: visible;
+  transform: rotate(120deg);
+}
+
+.hexagon-in2 {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  visibility: visible;
+  transform: rotate(-60deg);
+}
+
+.hexagon-in3 {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  visibility: visible;
+  transform: rotate(-60deg);
+  background-color: #fff8e1;
+  border: 2px solid #ffd54f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

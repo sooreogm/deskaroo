@@ -1,0 +1,154 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 6%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 6%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 6%;
+
+    --primary: 43 96% 50%;
+    --primary-foreground: 0 0% 6%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 12%;
+
+    --muted: 0 0% 97%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 43 100% 95%;
+    --accent-foreground: 0 0% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 87%;
+    --input: 0 0% 87%;
+    --ring: 43 96% 50%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 0 0% 6%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 43 96% 50%;
+    --primary-foreground: 0 0% 6%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 65%;
+
+    --accent: 43 100% 14%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 43 96% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at top left, hsla(43, 96%, 50%, 0.08), transparent 24%),
+      radial-gradient(circle at top right, hsla(0, 0%, 0%, 0.05), transparent 18%),
+      linear-gradient(180deg, #ffffff 0%, #f8f8f6 100%);
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: "Avenir Next", "Segoe UI Variable", "Segoe UI", sans-serif;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.28);
+    color: hsl(var(--foreground));
+  }
+}
+
+.shell-panel {
+  background: hsla(0, 0%, 100%, 0.94);
+  border: 1px solid hsla(0, 0%, 0%, 0.08);
+  border-radius: 1.75rem;
+  box-shadow: 0 32px 90px -52px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(14px);
+}
+
+.ink-panel {
+  background: linear-gradient(180deg, #101010 0%, #050505 100%);
+  border: 1px solid hsla(0, 0%, 100%, 0.08);
+  border-radius: 1.75rem;
+  color: white;
+  box-shadow: 0 32px 90px -46px rgba(0, 0, 0, 0.68);
+}
+
+.page-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+
+.page-eyebrow::before {
+  content: "";
+  display: block;
+  width: 2.25rem;
+  height: 1px;
+  background: hsl(var(--primary));
+}
+
+.hover-scale {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.hover-scale:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 80px -48px rgba(0, 0, 0, 0.22);
+}
+
+.desk {
+  @apply relative rounded-xl overflow-hidden transition-all duration-300 ease-in-out;
+}
+
+.desk-available {
+  @apply border-2 border-black/10 bg-white hover:border-primary;
+}
+
+.desk-booked {
+  @apply border-2 border-black/10 bg-muted opacity-60;
+}
+
+.desk-selected {
+  @apply border-2 border-primary bg-primary/10 ring-2 ring-primary/20;
+}
+
+.room {
+  @apply relative border-2 border-gray-200 rounded-xl;
+}
