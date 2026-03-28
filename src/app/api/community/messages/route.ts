@@ -6,7 +6,6 @@ import { ensureSeedData } from '@/lib/db/seed';
 
 const MAX_MESSAGE_LENGTH = 600;
 const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_VOICE_NOTE_SIZE_BYTES = 12 * 1024 * 1024;
 
 const readMessagePayload = async (request: Request) => {
   const contentType = request.headers.get('content-type') ?? '';
@@ -14,12 +13,10 @@ const readMessagePayload = async (request: Request) => {
   if (contentType.includes('multipart/form-data')) {
     const formData = await request.formData();
     const attachment = formData.get('attachment');
-    const voiceNote = formData.get('voiceNote');
 
     return {
       content: String(formData.get('content') ?? ''),
       attachment: attachment instanceof File && attachment.size > 0 ? attachment : null,
-      voiceNote: voiceNote instanceof File && voiceNote.size > 0 ? voiceNote : null,
     };
   }
 
@@ -28,25 +25,12 @@ const readMessagePayload = async (request: Request) => {
   return {
     content: String(payload.content ?? ''),
     attachment: null,
-    voiceNote: null,
   };
 };
 
-const validateAttachment = (file: File, kind: 'attachment' | 'voiceNote') => {
+const validateAttachment = (file: File) => {
   if (file.size <= 0) {
     throw new Error('Uploaded files cannot be empty.');
-  }
-
-  if (kind === 'voiceNote') {
-    if (!file.type.startsWith('audio/')) {
-      throw new Error('Voice notes must be audio files.');
-    }
-
-    if (file.size > MAX_VOICE_NOTE_SIZE_BYTES) {
-      throw new Error('Voice notes must be 12MB or smaller.');
-    }
-
-    return;
   }
 
   if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
@@ -73,12 +57,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const { content, attachment, voiceNote } = await readMessagePayload(request);
+    const { content, attachment } = await readMessagePayload(request);
     const trimmedContent = String(content ?? '').trim();
 
-    if (!trimmedContent && !attachment && !voiceNote) {
+    if (!trimmedContent && !attachment) {
       return NextResponse.json(
-        { error: 'Add a message, an attachment, or a voice note before sending.' },
+        { error: 'Add a message or an attachment before sending.' },
         { status: 400 }
       );
     }
@@ -91,11 +75,7 @@ export async function POST(request: Request) {
     }
 
     if (attachment) {
-      validateAttachment(attachment, 'attachment');
-    }
-
-    if (voiceNote) {
-      validateAttachment(voiceNote, 'voiceNote');
+      validateAttachment(attachment);
     }
 
     const space = await ensureDefaultCommunitySpace();
@@ -116,10 +96,10 @@ export async function POST(request: Request) {
     }
 
     const attachments = await Promise.all(
-      [attachment, voiceNote]
+      [attachment]
         .filter((file): file is File => !!file)
         .map(async (file) => ({
-          kind: file === voiceNote ? 'voice_note' : 'file',
+          kind: 'file',
           fileName: file.name,
           mimeType: file.type || 'application/octet-stream',
           size: file.size,

@@ -5,15 +5,12 @@ import { format } from 'date-fns';
 import {
   ArrowLeft,
   Camera,
-  FileAudio,
   FileText,
   Hash,
   Loader2,
   MessageSquare,
-  Mic,
   Paperclip,
   Send,
-  Square,
   Users,
   X,
 } from 'lucide-react';
@@ -45,7 +42,6 @@ const formatMessageTimestamp = (date: Date) => {
 };
 
 const MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_VOICE_NOTE_SIZE_BYTES = 12 * 1024 * 1024;
 
 const formatFileSize = (size: number) => {
   if (size < 1024) {
@@ -59,15 +55,6 @@ const formatFileSize = (size: number) => {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-const formatRecordingTime = (seconds: number) => {
-  const mins = Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, '0');
-  const secs = (seconds % 60).toString().padStart(2, '0');
-
-  return `${mins}:${secs}`;
-};
-
 const CommunitySpace = () => {
   const router = useRouter();
   const { data: community, isLoading, error, refetch } = useCommunitySpace();
@@ -75,54 +62,12 @@ const CommunitySpace = () => {
   const postMutation = usePostCommunityMessage();
   const [draft, setDraft] = useState('');
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
-  const [voiceNoteFile, setVoiceNoteFile] = useState<File | null>(null);
-  const [voiceNotePreviewUrl, setVoiceNotePreviewUrl] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const feedEndRef = useRef<HTMLDivElement | null>(null);
   const attachmentInputRef = useRef<HTMLInputElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordingStreamRef = useRef<MediaStream | null>(null);
-  const recordingChunksRef = useRef<Blob[]>([]);
-  const recordingIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [community?.messages.length]);
-
-  useEffect(() => {
-    if (!voiceNoteFile) {
-      setVoiceNotePreviewUrl((currentUrl) => {
-        if (currentUrl) {
-          URL.revokeObjectURL(currentUrl);
-        }
-
-        return null;
-      });
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(voiceNoteFile);
-    setVoiceNotePreviewUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [voiceNoteFile]);
-
-  useEffect(() => {
-    return () => {
-      if (recordingIntervalRef.current !== null) {
-        window.clearInterval(recordingIntervalRef.current);
-      }
-
-      if (mediaRecorderRef.current?.state && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-      }
-
-      recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
-    };
-  }, []);
 
   const handleGoBack = () => {
     if (window.history.length > 1) {
@@ -131,18 +76,6 @@ const CommunitySpace = () => {
     }
 
     router.push('/dashboard');
-  };
-
-  const stopRecordingTimer = () => {
-    if (recordingIntervalRef.current !== null) {
-      window.clearInterval(recordingIntervalRef.current);
-      recordingIntervalRef.current = null;
-    }
-  };
-
-  const stopRecordingStream = () => {
-    recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
-    recordingStreamRef.current = null;
   };
 
   const handleAttachmentSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,114 +95,12 @@ const CommunitySpace = () => {
     setAttachmentFile(file);
   };
 
-  const handleStartRecording = async () => {
-    if (postMutation.isPending) {
-      return;
-    }
-
-    if (
-      typeof window === 'undefined' ||
-      typeof MediaRecorder === 'undefined' ||
-      !navigator.mediaDevices?.getUserMedia
-    ) {
-      toast.error('Voice notes are not supported in this browser.');
-      return;
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const preferredMimeType = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-        'audio/ogg;codecs=opus',
-      ].find((mimeType) => MediaRecorder.isTypeSupported(mimeType));
-
-      const recorder = preferredMimeType
-        ? new MediaRecorder(stream, { mimeType: preferredMimeType })
-        : new MediaRecorder(stream);
-
-      recordingStreamRef.current = stream;
-      mediaRecorderRef.current = recorder;
-      recordingChunksRef.current = [];
-      setVoiceNoteFile(null);
-      setRecordingSeconds(0);
-      setIsRecording(true);
-
-      recorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordingChunksRef.current.push(event.data);
-        }
-      };
-
-      recorder.onstop = () => {
-        stopRecordingTimer();
-        stopRecordingStream();
-        setIsRecording(false);
-
-        const mimeType = recorder.mimeType || 'audio/webm';
-        const blob = new Blob(recordingChunksRef.current, { type: mimeType });
-        recordingChunksRef.current = [];
-        mediaRecorderRef.current = null;
-
-        if (!blob.size) {
-          return;
-        }
-
-        if (blob.size > MAX_VOICE_NOTE_SIZE_BYTES) {
-          toast.error('Voice notes must be 12MB or smaller.');
-          return;
-        }
-
-        const extension = mimeType.includes('mp4')
-          ? 'm4a'
-          : mimeType.includes('ogg')
-          ? 'ogg'
-          : 'webm';
-
-        setVoiceNoteFile(
-          new File([blob], `voice-note-${Date.now()}.${extension}`, {
-            type: mimeType,
-            lastModified: Date.now(),
-          })
-        );
-      };
-
-      recorder.start();
-      recordingIntervalRef.current = window.setInterval(() => {
-        setRecordingSeconds((current) => current + 1);
-      }, 1000);
-    } catch (recordingError) {
-      stopRecordingTimer();
-      stopRecordingStream();
-      setIsRecording(false);
-      toast.error(
-        recordingError instanceof Error
-          ? recordingError.message
-          : 'Unable to start recording the voice note.'
-      );
-    }
-  };
-
-  const handleStopRecording = () => {
-    const recorder = mediaRecorderRef.current;
-
-    if (!recorder || recorder.state === 'inactive') {
-      stopRecordingTimer();
-      stopRecordingStream();
-      setIsRecording(false);
-      return;
-    }
-
-    recorder.stop();
-  };
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const trimmedDraft = draft.trim();
 
-    if ((!trimmedDraft && !attachmentFile && !voiceNoteFile) || postMutation.isPending || isRecording) {
+    if ((!trimmedDraft && !attachmentFile) || postMutation.isPending) {
       return;
     }
 
@@ -277,12 +108,9 @@ const CommunitySpace = () => {
       await postMutation.mutateAsync({
         content: trimmedDraft,
         attachmentFile,
-        voiceNoteFile,
       });
       setDraft('');
       setAttachmentFile(null);
-      setVoiceNoteFile(null);
-      setRecordingSeconds(0);
     } catch {
       // The mutation already surfaces the error to the user.
     }
@@ -333,7 +161,7 @@ const CommunitySpace = () => {
   }
 
   const canPost = !!community.membership && !community.requiresAvatar;
-  const canSend = !!canPost && !isRecording && (!!draft.trim() || !!attachmentFile || !!voiceNoteFile);
+  const canSend = !!canPost && (!!draft.trim() || !!attachmentFile);
   const channelName = community.space.slug || 'community';
 
   return (
@@ -521,7 +349,7 @@ const CommunitySpace = () => {
                   />
 
                   <div className="rounded-[2rem] border border-black/10 bg-white p-2">
-                    {(attachmentFile || voiceNoteFile || isRecording) ? (
+                    {attachmentFile ? (
                       <div className="space-y-3 px-2 pb-3">
                         {attachmentFile ? (
                           <div className="rounded-[1.25rem] border border-black/10 bg-muted/20 p-3">
@@ -548,53 +376,6 @@ const CommunitySpace = () => {
                             </div>
                           </div>
                         ) : null}
-
-                        {isRecording ? (
-                          <div className="rounded-[1.25rem] border border-black bg-black p-3 text-white">
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="flex items-center gap-2 text-sm font-medium">
-                                <Mic className="h-4 w-4" />
-                                Recording voice note
-                              </div>
-                              <span className="text-xs uppercase tracking-[0.18em] text-white/70">
-                                {formatRecordingTime(recordingSeconds)}
-                              </span>
-                            </div>
-                          </div>
-                        ) : voiceNoteFile ? (
-                          <div className="rounded-[1.25rem] border border-black/10 bg-muted/20 p-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                                  <FileAudio className="h-4 w-4" />
-                                  Voice note
-                                </div>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {formatFileSize(voiceNoteFile.size)}
-                                </p>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 rounded-full"
-                                onClick={() => setVoiceNoteFile(null)}
-                              >
-                                <X className="h-4 w-4" />
-                                <span className="sr-only">Remove voice note</span>
-                              </Button>
-                            </div>
-
-                            {voiceNotePreviewUrl ? (
-                              <audio
-                                controls
-                                src={voiceNotePreviewUrl}
-                                className="mt-3 w-full"
-                                preload="metadata"
-                              />
-                            ) : null}
-                          </div>
-                        ) : null}
                       </div>
                     ) : null}
 
@@ -605,7 +386,7 @@ const CommunitySpace = () => {
                         size="icon"
                         className="h-12 w-12 rounded-full bg-white text-muted-foreground hover:bg-muted"
                         onClick={() => attachmentInputRef.current?.click()}
-                        disabled={postMutation.isPending || isRecording}
+                        disabled={postMutation.isPending}
                       >
                         <Paperclip className="h-5 w-5" />
                         <span className="sr-only">Attach file</span>
@@ -620,26 +401,6 @@ const CommunitySpace = () => {
                           maxLength={600}
                         />
                       </div>
-
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-12 w-12 rounded-full bg-white text-muted-foreground hover:bg-muted"
-                        onClick={() => {
-                          if (isRecording) {
-                            handleStopRecording();
-                          } else {
-                            void handleStartRecording();
-                          }
-                        }}
-                        disabled={postMutation.isPending}
-                      >
-                        {isRecording ? <Square className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-                        <span className="sr-only">
-                          {isRecording ? 'Stop recording voice note' : 'Record voice note'}
-                        </span>
-                      </Button>
 
                       <Button
                         type="submit"

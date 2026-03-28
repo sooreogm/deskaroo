@@ -392,7 +392,6 @@ export const postCommunityMessageRequest = async (
   payload: {
     content: string;
     attachmentFile?: File | null;
-    voiceNoteFile?: File | null;
   }
 ): Promise<CommunityMessage> => {
   const formData = new FormData();
@@ -400,10 +399,6 @@ export const postCommunityMessageRequest = async (
 
   if (payload.attachmentFile) {
     formData.set('attachment', payload.attachmentFile, payload.attachmentFile.name);
-  }
-
-  if (payload.voiceNoteFile) {
-    formData.set('voiceNote', payload.voiceNoteFile, payload.voiceNoteFile.name);
   }
 
   const data = await requestJson<CommunityMessageResponse>(
