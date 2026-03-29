@@ -28,6 +28,15 @@ const sanitizeFileName = (value: string) => {
     .replace(/^-+|-+$/g, '');
 };
 
+const loadImage = (src: string) => {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Unable to prepare the QR code for download.'));
+    image.src = src;
+  });
+};
+
 const DeskQRCode = ({ deskId, deskName, size = 200, showDownloadAction = false }: DeskQRCodeProps) => {
   const [checkinUrl, setCheckinUrl] = useState(`/checkin?desk=${deskId}`);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -66,15 +75,45 @@ const DeskQRCode = ({ deskId, deskName, size = 200, showDownloadAction = false }
   <text x="${cardWidth / 2}" y="${size + 124}" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#9ca3af">Desk ID: ${escapeXml(deskId)}</text>
 </svg>`;
 
-      const blob = new Blob([downloadMarkup], { type: 'image/svg+xml;charset=utf-8' });
-      const objectUrl = URL.createObjectURL(blob);
+      const svgBlob = new Blob([downloadMarkup], { type: 'image/svg+xml;charset=utf-8' });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      const image = await loadImage(svgUrl);
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      const scale = 2;
+
+      if (!context) {
+        throw new Error('Unable to prepare the QR code for download.');
+      }
+
+      canvas.width = cardWidth * scale;
+      canvas.height = cardHeight * scale;
+      context.scale(scale, scale);
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, cardWidth, cardHeight);
+      context.drawImage(image, 0, 0, cardWidth, cardHeight);
+
+      const pngBlob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+
+          reject(new Error('Unable to prepare the QR code for download.'));
+        }, 'image/png');
+      });
+
+      URL.revokeObjectURL(svgUrl);
+
+      const objectUrl = URL.createObjectURL(pngBlob);
       const anchor = document.createElement('a');
       const fileNamePrefix = [sanitizeFileName(deskName), sanitizeFileName(deskId)]
         .filter(Boolean)
         .join('-');
 
       anchor.href = objectUrl;
-      anchor.download = `${fileNamePrefix || 'desk'}-qr-code.svg`;
+      anchor.download = `${fileNamePrefix || 'desk'}-qr-code.png`;
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
@@ -112,7 +151,7 @@ const DeskQRCode = ({ deskId, deskName, size = 200, showDownloadAction = false }
           disabled={isDownloading}
         >
           {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
-          {isDownloading ? 'Preparing download...' : 'Download SVG'}
+          {isDownloading ? 'Preparing download...' : 'Download PNG'}
         </Button>
       ) : null}
     </div>

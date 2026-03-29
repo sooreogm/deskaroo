@@ -495,7 +495,7 @@ const AdminRooms = () => {
               <div className="space-y-4 pt-4">
                 <DeskQRCode deskId={qrDesk.id} deskName={qrDesk.name} size={220} showDownloadAction />
                 <p className="text-center text-sm text-muted-foreground">
-                  Attach this QR code to the physical desk so staff can scan it to check in and check out, or download the SVG for printing and signage.
+                  Attach this QR code to the physical desk so staff can scan it to check in and check out, or download the PNG for printing and signage.
                 </p>
               </div>
             )}
