@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import Logo from '@/components/navbar/Logo';
 import { resendEmailVerification } from '@/utils/users';
+import { getSafeRedirectTarget, LOGIN_REDIRECT_PARAM } from '@/lib/auth-redirect';
 
 const highlights = [
   {
@@ -32,6 +33,7 @@ const Login = () => {
   const { signIn, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectTarget = getSafeRedirectTarget(searchParams.get(LOGIN_REDIRECT_PARAM));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,9 +43,9 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
-      router.push('/dashboard');
+      router.replace(redirectTarget);
     }
-  }, [router, user]);
+  }, [redirectTarget, router, user]);
 
   useEffect(() => {
     const queryEmail = searchParams.get('email');
@@ -119,7 +121,7 @@ const Login = () => {
     } else {
       setVerificationHint(null);
       toast.success('Welcome back!');
-      router.push('/dashboard');
+      router.replace(redirectTarget);
     }
     setLoading(false);
   };
