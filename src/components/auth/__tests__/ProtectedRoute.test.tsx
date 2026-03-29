@@ -4,8 +4,6 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 
 const replace = jest.fn();
-let pathname = '/checkin';
-let searchParams = new URLSearchParams('desk=desk-1');
 
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: jest.fn(),
@@ -15,15 +13,12 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     replace,
   }),
-  usePathname: () => pathname,
-  useSearchParams: () => searchParams,
 }));
 
 describe('ProtectedRoute', () => {
   beforeEach(() => {
     replace.mockReset();
-    pathname = '/checkin';
-    searchParams = new URLSearchParams('desk=desk-1');
+    window.history.replaceState({}, '', '/checkin?desk=desk-1');
   });
 
   it('redirects unauthenticated users to login with their current URL preserved', () => {

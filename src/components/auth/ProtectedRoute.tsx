@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { LOGIN_REDIRECT_PARAM } from '@/lib/auth-redirect';
 
 interface ProtectedRouteProps {
@@ -12,14 +12,10 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps) => {
   const { user, loading, isAdmin } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!loading && !user) {
-      const currentPath = pathname || '/';
-      const currentSearch = searchParams.toString();
-      const redirectTarget = currentSearch ? `${currentPath}?${currentSearch}` : currentPath;
+      const redirectTarget = `${window.location.pathname}${window.location.search}${window.location.hash}`;
       const loginUrl = `/login?${LOGIN_REDIRECT_PARAM}=${encodeURIComponent(redirectTarget)}`;
 
       router.replace(loginUrl);
@@ -29,7 +25,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     if (!loading && requireAdmin && !isAdmin) {
       router.replace('/dashboard');
     }
-  }, [user, loading, requireAdmin, isAdmin, pathname, router, searchParams]);
+  }, [user, loading, requireAdmin, isAdmin, router]);
 
   if (loading) {
     return (
